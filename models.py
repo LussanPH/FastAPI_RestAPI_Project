@@ -1,9 +1,15 @@
-from sqlalchemy import create_engine, Column, Integer, Float, String, Boolean, ForeignKey
+import enum
+from sqlalchemy import create_engine, Column, Integer, Float, String, Boolean, ForeignKey, Enum
 from sqlalchemy.orm import declarative_base
 
 db = create_engine("sqlite///banco.db", echo=True)
 
 Base = declarative_base()
+
+class Status_pedido(enum.Enum):
+    PENDENTE: "PENDENTE"
+    CANCELADO: "CANCELADO"
+    FINALIZADO: "FINALIZADO"
 
 class Usuario(Base):
     __tablename__ = "usuarios"
@@ -26,14 +32,12 @@ class Pedido(Base):
     __tablename__ = "pedidos"
 
     id = Column("id", Integer, primary_key=True, autoincrement=True)
-    status = Column("name", String)
+    status = Column("status", Enum(Status_pedido), default=Status_pedido.PENDENTE)
     usuario = Column("usuario", ForeignKey("usuarios.id"))
     preco = Column("preco", Float)
     #itens = 
 
-    def __init__(self, name, email, senha, ativo=True, admin=False):
-        self.name = name
-        self.email = email
-        self.senha = senha
-        self.ativo = ativo
-        self.admin = admin
+    def __init__(self, status=Status_pedido.PENDENTE, usuario, preco=0):
+        self.status = status
+        self.usuario = usuario
+        self.preco = preco
