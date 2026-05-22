@@ -1,28 +1,24 @@
 import enum
-from sqlalchemy import create_engine, Column, Integer, Float, String, Boolean, ForeignKey, Enum
+from sqlalchemy import create_engine, Column, Integer, Float, String, Boolean, ForeignKey
 from sqlalchemy.orm import declarative_base
+from sqlalchemy_utils import ChoiceType
 
-db = create_engine("sqlite///banco.db", echo=True)
+db = create_engine("sqlite:///banco.db", echo=True)
 
 Base = declarative_base()
-
-class Status_pedido(enum.Enum):
-    PENDENTE: "PENDENTE"
-    CANCELADO: "CANCELADO"
-    FINALIZADO: "FINALIZADO"
 
 class Usuario(Base):
     __tablename__ = "usuarios"
 
     id = Column("id", Integer, primary_key=True, autoincrement=True)
-    name = Column("name", String)
+    nome = Column("nome", String)
     email = Column("email", String, nullable=False)
     senha = Column("senha", String)
     ativo = Column("ativo", Boolean)
     admin = Column("admin", Boolean, default=False)
 
-    def __init__(self, name, email, senha, ativo=True, admin=False):
-        self.name = name
+    def __init__(self, nome, email, senha, ativo=True, admin=False):
+        self.nome = nome
         self.email = email
         self.senha = senha
         self.ativo = ativo
@@ -31,13 +27,36 @@ class Usuario(Base):
 class Pedido(Base):
     __tablename__ = "pedidos"
 
+    """STATUS_PEDIDO = (
+        ("PENDENTE", "PENDENTE"),
+        ("CANCELADO", "CANCELADO"),
+        ("CONCLUIDO", "CONCLUIDO")
+    )"""
+
     id = Column("id", Integer, primary_key=True, autoincrement=True)
-    status = Column("status", Enum(Status_pedido), default=Status_pedido.PENDENTE)
+    status = Column("status", String)
     usuario = Column("usuario", ForeignKey("usuarios.id"))
     preco = Column("preco", Float)
     #itens = 
 
-    def __init__(self, status=Status_pedido.PENDENTE, usuario, preco=0):
+    def __init__(self, usuario, status="PENDENTE", preco=0):
         self.status = status
         self.usuario = usuario
         self.preco = preco
+
+class ItemPedido(Base):
+    __tablename__ = "itens_pedido"
+
+    id = Column("id", Integer, primary_key=True, autoincrement=True)
+    quantidade = Column("quantidade", Integer)
+    sabor = Column("sabor", String)
+    tamanho = Column("tamanho", String)
+    preco_unitario = Column("preco_unitario", Float)
+    pedido = Column("pedido", ForeignKey("pedidos.id"))
+
+    def __init__(self, quantidade, sabor, tamanho, preco_unitario, pedido):
+        self.quantidade = quantidade
+        self.sabor = sabor
+        self.tamanho = tamanho
+        self.preco_unitario = preco_unitario
+        self.pedido = pedido
