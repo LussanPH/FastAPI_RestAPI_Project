@@ -1,12 +1,9 @@
 from fastapi import FastAPI
-from dotenv import load_dotenv
-import os
-
-load_dotenv()
-
-SECRET_KEY = os.getenv("SECRET_KEY")
+from fastapi.security import OAuth2PasswordBearer
 
 app = FastAPI()
+
+oauth2_schema = OAuth2PasswordBearer(tokenUrl="auth/login_form")
 
 from orders_routes import orders_router
 from auth_routes import auth_router
