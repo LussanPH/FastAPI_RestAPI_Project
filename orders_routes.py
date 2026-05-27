@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from schemas import PedidoSchema, ItemPedidoSchema
+from schemas import PedidoSchema, ItemPedidoSchema, ResponsePedidoSchema
 from dependencies import fetch_session, token_verification
 from models import Pedido, Usuario, ItemPedido
+from typing import List
 
 
 
@@ -119,3 +120,50 @@ async def add_item(id_item_pedido : int,
     }
 
 
+@orders_router.post("/finalize_order/{id_pedido}")
+async def add_item(id_pedido : int,     
+                    session : Session = Depends(fetch_session), 
+                    usuario : Usuario = Depends(token_verification)):
+    
+    pedido = session.query(Pedido).filter(ItemPedido.id==id_pedido).first()
+
+    if not pedido:
+        raise HTTPException(status_code=400, detail="Pedido não existente no banco de dados.")
+    
+    if not usuario.admin and usuario.id != pedido.usuario:
+        raise HTTPException(status_code=401, detail="Você não tem autorização para adicionar um item a esse pedido.")
+
+    pedido.status = "FINALIZADO"
+    session.commit()
+
+    return {
+        "mensagem": "Pedido finalizado com sucesso!",
+        "id_pedido": pedido.id,
+        "pedido": pedido
+    }
+
+
+@orders_router.get("/order/{id_pedido}")
+async def get_order(id_pedido: int,
+                    session : Session = Depends(fetch_session), 
+                    usuario : Usuario = Depends(token_verification)):
+    
+    pedido = session.query(Pedido).filter(Pedido.id == id_pedido).first()
+
+    if not pedido:
+        raise HTTPException(status_code=400, detail="Pedido não existente no banco de dados.")
+    
+    if not usuario.admin and usuario.id != pedido.usuario:
+        raise HTTPException(status_code=401, detail="Você não tem autorização para adicionar um item a esse pedido.")
+    
+    return{
+        "quantidade_itens_pedido": len(pedido.itens),
+        "pedido": pedido
+    }
+
+
+@orders_router.get("/list/user_orders", response_model=List[ResponsePedidoSchema])
+async def list_orders(session : Session = Depends(fetch_session), usuario : Usuario = Depends(token_verification)):
+    pedidos = session.query(Pedido).filter(Pedido.usuario==usuario.id).first()
+
+    return pedidos
